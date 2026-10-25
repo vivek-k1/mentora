@@ -1,0 +1,98 @@
+// Prisma schema — Student Mentoring & Career Support Platform
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  STUDENT
+  MENTOR
+  ADMIN
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  BUSY
+  UNAVAILABLE
+}
+
+enum RequestStatus {
+  PENDING_ADMIN
+  PENDING_MENTOR
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String // bcrypt hash
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+
+  profile          Profile?
+  studentRequests  MentorshipRequest[] @relation("StudentRequests")
+  mentorRequests   MentorshipRequest[] @relation("MentorRequests")
+  messagesSent     Message[]
+}
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio         String?
+  // Comma-separated list (SQLite has no scalar lists), e.g. "React,Python,ML"
+  skills      String  @default("")
+  careerGoals String?
+
+  // Student-specific
+  degree String?
+  cgpa   Float?
+
+  // Mentor-specific
+  availabilityStatus AvailabilityStatus @default(AVAILABLE)
+  maxMentees         Int                @default(3)
+
+  updatedAt DateTime @updatedAt
+}
+
+model MentorshipRequest {
+  id        String        @id @default(cuid())
+  studentId String
+  student   User          @relation("StudentRequests", fields: [studentId], references: [id], onDelete: Cascade)
+  mentorId  String
+  mentor    User          @relation("MentorRequests", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  status             RequestStatus @default(PENDING_ADMIN)
+  problemDescription String
+  feedback           String? // meeting logs / feedback notes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+
+  @@index([studentId])
+  @@index([mentorId])
+  @@index([status])
+}
+
+model Message {
+  id        String            @id @default(cuid())
+  requestId String
+  request   MentorshipRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([requestId])
+}
