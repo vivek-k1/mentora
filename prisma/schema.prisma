@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 enum Role {
@@ -48,7 +48,7 @@ model Profile {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   bio         String?
-  // Comma-separated list (SQLite has no scalar lists), e.g. "React,Python,ML"
+  // Comma-separated list, e.g. "React,Python,ML"
   skills      String  @default("")
   careerGoals String?
 
